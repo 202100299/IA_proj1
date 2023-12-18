@@ -81,14 +81,32 @@ Ficheiro `projeto.lisp`
 ### BFS (Breadth-First Search)
 
 Função `init_bfs`
-A função `init_bfs` inicia o algoritmo BFS. Permite ao usuário especificar ou não a posição inicial e retorna os resultados da busca.
+A função `init_bfs` inicia o algoritmo BFS. Permite ao utilizador especificar ou não a posição inicial e retorna os resultados da busca.
+
+### Exemplo:
+
+(init_bfs (state_constructer board) 2 '(7 8))
+
+Neste exemplo, o BFS é iniciado a partir do estado inicial gerado pelo construtor de estado (`state_constructer`). A posição inicial é especificada como (7, 8).
 
 ### DFS (Depth-First Search)
 
 Função `init_dfs`
-A função `init_dfs` inicia o algoritmo DFS. Permite ao usuário especificar ou não a posição inicial e a profundidade máxima. Retorna os resultados da busca.
+A função `init_dfs` inicia o algoritmo DFS. Permite ao utilizador especificar ou não a posição inicial e a profundidade máxima. Retorna os resultados da busca.
+
+### Exemplo:
+
+(init_dfs (state_constructer board) nil '(3 4) 10)
+
+Neste exemplo, o DFS é iniciado a partir do estado inicial gerado pelo construtor de estado (`state_constructer`). A posição inicial não é especificada, e a profundidade máxima é definida como 10.
 
 ### A* (A-star)
 
 Função `init_a_star`
-A função `init_a_star` inicia o algoritmo A*. Permite ao usuário especificar ou não a posição inicial e a função heurística. Retorna os resultados da busca.
+A função `init_a_star` inicia o algoritmo A*. Permite ao utilizador especificar ou não a posição inicial e a função heurística. Retorna os resultados da busca.
+
+### Exemplo:
+
+(init_a_star (state_constructer board) 1 '(1 2) 'heuristic_function)
+
+Neste exemplo, o A* é iniciado a partir do estado inicial gerado pelo construtor de estado (`state_constructer`). A posição inicial é especificada como (1, 2), e a função heurística utilizada é denominada 'heuristic_function'.
