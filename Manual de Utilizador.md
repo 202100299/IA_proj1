@@ -6,7 +6,7 @@ O programa visa resolver problemas específicos de um jogo de tabuleiro com cava
 
 ## Funcionamento Geral
 
-O programa segue uma estrutura de menus, onde o usuário pode escolher diferentes opções, como selecionar um tabuleiro específico, recarregar tabuleiros, aplicar algoritmos de busca e visualizar estatísticas.
+O programa segue uma estrutura de menus, onde o utilizador pode escolher diferentes opções, como selecionar um tabuleiro específico, recarregar tabuleiros, aplicar algoritmos de busca e visualizar estatísticas.
 
 ## Utilização do Programa
 
