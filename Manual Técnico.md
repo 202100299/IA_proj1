@@ -1,4 +1,4 @@
-# Relatório do Projeto - Jogo de Tabuleiro com Cavalos
+# Manual Técnico - Jogo de Tabuleiro com Cavalos
 
 ## Objetivo
 
