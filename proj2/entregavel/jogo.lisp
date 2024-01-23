@@ -299,15 +299,20 @@ troca o de algarimos inversos por nil, e retorna a sua posição"
 "Verifica se o numero é de duplo algarismo" 
   (= (mod numb 10) (floor (/ numb 10)))
 )
-minmax (state depth heuristic expand)
+;minmax (state depth heuristic expand)
 ;computer functions
 (defun computer_move (state max_time)
 "(alfabeta state play_turn depth max_time heuristic)"
-  (node-value (car (cdr (built_path (if (= (get_play_turn state) -1)
-    (minmax state 2 #'h1_player1 #'get_possible_plays)
-    (minmax state 2 #'h1_player2 #'get_possible_plays)
-  )))))
-  
+  (get_value
+    (if (= (get_play_turn state) -1)
+      (minmax state 5 #'h1_player1 #'get_possible_plays)
+      (minmax state 5 #'h1_player2 #'get_possible_plays)
+    )
+  )
+)
+
+(defun simulate_game (state depth)
+  (mapcar #'(lambda (node) (print_state (node-value node))) (built_path (minmax state depth #'h1_player1 #'get_possible_plays)))
 )
 
 ;heuristics
