@@ -1,41 +1,9 @@
 ;(defun example_state () (state_constructer (ramdom_board)))
-;(defun example_state_with_players () 
-;  (state_constructer_with_params 
-;    (ramdom_board) 
-;    (player_constructer 0 (position_constructer 0 0) nil) 
-;    (player_constructer 0 (position_constructer 0 9) nil) 
-;  )
-;)
-
-
-(defun ramdom_board ()
-    (let ((numbs (shuffle (loop for num from 0 to 99 collect num))))
-        (list 
-            (subseq numbs 0 10)
-            (subseq numbs 10 20)
-            (subseq numbs 20 30)
-            (subseq numbs 30 40)
-            (subseq numbs 40 50)
-            (subseq numbs 50 60)
-            (subseq numbs 60 70)
-            (subseq numbs 70 80)
-            (subseq numbs 80 90)
-            (subseq numbs 90 100)
-            
-        )
-    )
-    
-)
-(defun shuffle (lst)
-  (loop for i from (1- (length lst)) downto 1
-        do (rotatef (elt lst i) (elt lst (random (1+ i)))))
-  lst)
+;(defun example_state_with_players () (first_play (first_play (example_state) 0) 0))
 
 
 
-
-
-  ;;Board definition constructer and auxiliare funcs
+;Board definition constructer and auxiliare funcs
 (defstruct board
     (points)
 )
@@ -61,11 +29,11 @@
 )
 
 
-
-;;State definition constructer and auxiliare funcs
+;State definition
 (defstruct state
     (board)
     (players (list (make-player) (make-player)))
+    (play_turn -1)
 )
 (defun state_constructer (points_list)
 "Construtor da estrutura de dados State com parametros default"
@@ -73,18 +41,22 @@
         :board (board_constructer points_list)
     )
 )
-(defun state_constructer_with_params (points_list player1 player2)
+(defun state_constructer_with_params (points_list player1 player2 play_turn)
 "Construtor da estrutura de dados State"
     (make-state 
         :board (board_constructer points_list)
         :players (list player1 player2)
+        :play_turn play_turn
     )
 )
 (defun get_state_square (state position)
 "Retorna o valor dos pontos em uma determina posição"
-  (let ((x (horse_position-x position)) (y (horse_position-y position)))
-    (if (or (>= x 10) (< x 0) (>= y 10) (< y 0)) nil
-      (nth x (nth y (get_state_board_points state)))
+  (if (or (NULL state) (NULL position))
+    nil
+    (let ((x (horse_position-x position)) (y (horse_position-y position)))
+      (if (or (>= x 10) (< x 0) (>= y 10) (< y 0)) nil
+        (nth x (nth y (get_state_board_points state)))
+      )
     )
   )
 )
@@ -99,7 +71,9 @@
         (t nil)
   )
 )
-
+(defun get_play_turn (state)
+  (state-play_turn state)
+)
 (defun compare_state (state1 state2)
 "Compara 2 State e retorna t se forem iguais"
   (if (or (null state1) (null state2))
@@ -110,14 +84,18 @@
             (player2_state2 (state-player2 state2))
             (board1 (state-board state1)) 
             (board2 (state-board state2))
+            (play_turn1 (state-play_turn state1))
+            (play_turn2 (state-play_turn state2))
           )
       (and  (compare_player player1_state1 player1_state2) 
             (compare_player player2_state1 player2_state2) 
             (compare_board board1 board2)
+            (= play_turn1 play_turn2)
       )
     )
   )
 )
+
 
 ;;Player definition
 (defstruct player
@@ -126,6 +104,7 @@
     (path '())
 )
 (defun player_constructer (points position path)
+"Construtor da estrutura de dados Player"
     (make-player 
         :points points
         :position position
@@ -147,7 +126,8 @@
     )
 )
 
-;;Horse_Position definition constructer and auxiliare funcs
+
+;;Horse_Position definition
 (defstruct horse_position
   (x -1)
   (y -1)
@@ -169,20 +149,20 @@
 
 
 
-(defun first_play (state init_x player)
+;plays
+(defun first_play (state init_x)
+"Jogada inicial. init_x = posição inicial na linha 0 (se play_turn do state = -1) ou 9 (se play_turn do state = 1) "
   (cond ((or (null state) (null init_x)) nil)
-        ((= player -1) (move_piece state (list (+ init_x 1) 1) player))
-        (t (move_piece state (list (+ init_x 1) 10) player))
+        ((= (get_play_turn state) -1) (move_piece state (list (+ init_x 1) 1)))
+        (t (move_piece state (list (+ init_x 1) 10)))
   )
 )
-
-
-
-
-(defun move_piece (state movement_vector player)
+(defun move_piece (state movement_vector)
+"Jogada normal. Utiliza o movement_vector para transformar a posição do cavalo branco (se play_turn do state = -1) ou preto (se play_turn do state = 1)"
   (if (NULL state) nil
-    (let* ( (current_pos (player-position(get_player state player))) 
-            (other_player  (player-position(get_player state (* player -1))))
+    (let* ( (play_turn (get_play_turn state))
+            (current_pos (player-position(get_player state play_turn))) 
+            (other_player  (player-position(get_player state (* play_turn -1))))
             (not_allowed_pos (append 
                 (get_possible_positions other_player) 
                 (list other_player)
@@ -192,12 +172,14 @@
           )
         (cond ((or (NULL new_pos) (NULL points)) nil)
               ((not (NULL (member new_pos not_allowed_pos :test #'compare_position))) nil)
-              (T  (calculate_new_state state new_pos (simetry_double_rule state points) player))      
+              (T  (calculate_new_state state new_pos (simetry_double_rule state points)))      
         )
     )
   )
 )
 
+
+;auxiliary functions
 (defun transform_position (position vector)
 "Calcula o novo ponto a partir de um vector de movimento"
   (let* ( (x (+ (horse_position-x position) (nth 0 vector)))
@@ -209,12 +191,9 @@
       )
   )
 )
-
-
-
-(defun calculate_new_state (state new_position rule_position player)
+(defun calculate_new_state (state new_position rule_position)
 "Calcula o novo estado depois do movimento do cavalo"
-  (if (= player -1)
+  (if (= (get_play_turn state) -1)
     (state_constructer_with_params 
       (set_board_value 
         (set_board_value (get_state_board_points state) new_position NIL)
@@ -223,6 +202,7 @@
       )
       (get_new_player (get_player state -1) state new_position)
       (get_player state 1)
+      1
     )
     (state_constructer_with_params 
       (set_board_value 
@@ -232,10 +212,12 @@
       )
       (get_player state -1)
       (get_new_player (get_player state 1) state new_position)
+      -1
     )
   )
 )
 (defun get_new_player (player state new_position)
+"Cria um novo player a partir do estado e da nova posição"
   (player_constructer 
     (+ (player-points player) (get_state_square state new_position))
     new_position
@@ -263,11 +245,9 @@
   )
 )
 (defun calculate_vector (current_pos new_pos)
+"Calcula o vetor de movimento entre 2 posições"
   (list (- (horse_position-x new_pos) (horse_position-x current_pos)) (- (horse_position-y new_pos) (horse_position-y current_pos)))
 )
-
-
-
 (defun simetry_double_rule (state points)
 "Enforça as resgras de simetria ou double do jogo, se o numero for de duplo algarismo 
 troca o de duplo algarimo mais alto que encontra por nil caso contrario 
@@ -319,31 +299,62 @@ troca o de algarimos inversos por nil, e retorna a sua posição"
 "Verifica se o numero é de duplo algarismo" 
   (= (mod numb 10) (floor (/ numb 10)))
 )
+minmax (state depth heuristic expand)
+;computer functions
+(defun computer_move (state max_time)
+"(alfabeta state play_turn depth max_time heuristic)"
+  (node-value (car (cdr (built_path (if (= (get_play_turn state) -1)
+    (minmax state 2 #'h1_player1 #'get_possible_plays)
+    (minmax state 2 #'h1_player2 #'get_possible_plays)
+  )))))
+  
+)
 
-
-
-
-
-
-
-
-
- (defun computer_move (state play_turn depth max_time)
-  "(alfabeta state play_turn depth max_time heuristic)"
-  (alfabeta state play_turn depth max_time #'h1)
- )
-
-
+;heuristics
 (defun h1 (state play_turn)
 "Pontos do jogador - pontos do jogador inimigo"
   (- (player-points (get_player state play_turn)) (player-points(get_player state (* play_turn -1))))
 )
+(defun h1_player1 (state)
+"Pontos do jogador1 - pontos do jogador2"
+    (h1 state -1)
+)
+(defun h1_player2 (state)
+"Pontos do jogador2 - pontos do jogador1"
+    (h1 state 1)
+)
 
+;operators
+(defun get_possible_plays (state)
+"Retorna as todas jogada possiveis a partir de um estado"
+  (remove nil 
+    (mapcar 
+      #'(lambda (vec) 
+          (move_piece state vec)
+      )
+      (horse_possible_vectors)
+    )
+  ) 
+)
+(defun get_possible_initial_plays (state)
+"Retorna as todas jogada iniciais possiveis a partir de um estado"
+  (remove nil 
+    (mapcar 
+      #'(lambda (init_x) 
+          (first_play state init_x)
+      )
+      '(0 1 2 3 4 5 6 7 8 9)
+    )
+  ) 
+)
 
-
-(defun horse_possible_vectors () '((-1 -2) (1 -2) (2 -1) (2 1) (-1 2) (1 2) (-2 1) (-2 -1)))
-
+;auxiliary functions
+(defun horse_possible_vectors () 
+"Retorna uma lista com todos os vetores que o cavalo pode fazer."
+  '((-1 -2) (1 -2) (2 -1) (2 1) (-1 2) (1 2) (-2 1) (-2 -1))
+)
 (defun check_player_move (new_vector)
+"Verifica se o new_vector é igual a um dos vetores que o cavalo pode ter"
   (if (NULL (member 
               new_vector
               (horse_possible_vectors)
@@ -354,6 +365,7 @@ troca o de algarimos inversos por nil, e retorna a sua posição"
   )
 )
 (defun get_possible_positions (pos)
+"Retorna uma lista com todas as novas posições do cavalo."
   (remove nil 
     (mapcar 
       #'(lambda (vec) 
@@ -363,27 +375,33 @@ troca o de algarimos inversos por nil, e retorna a sua posição"
     )
   ) 
 )
-(defun get_possible_plays (state play_turn)
-  (let ((player (get_player state play_turn)))
-    (remove nil 
-      (mapcar 
-        #'(lambda (vec) 
-            (move_piece state vec player)
-        )
-        (horse_possible_vectors)
-      )
-    ) 
-  )
-)
 
-(defun get_possible_initial_plays (state play_turn)
-  (remove nil 
-    (mapcar 
-      #'(lambda (init_x) 
-          (first_play state init_x play_turn)
-      )
-      '(0 1 2 3 4 5 6 7 8 9)
+
+
+
+;Ramdom board
+(defun ramdom_board ()
+"Cria um tabuleiro a sorte"
+    (let ((numbs (shuffle (loop for num from 0 to 99 collect num))))
+        (list 
+            (subseq numbs 0 10)
+            (subseq numbs 10 20)
+            (subseq numbs 20 30)
+            (subseq numbs 30 40)
+            (subseq numbs 40 50)
+            (subseq numbs 50 60)
+            (subseq numbs 60 70)
+            (subseq numbs 70 80)
+            (subseq numbs 80 90)
+            (subseq numbs 90 100)
+            
+        )
     )
-  ) 
-  
+    
+)
+(defun shuffle (lst)
+"Baralhas os elementos de uma lista recebida como parametro. "
+  (loop for i from (1- (length lst)) downto 1
+        do (rotatef (elt lst i) (elt lst (random (1+ i)))))
+  lst
 )

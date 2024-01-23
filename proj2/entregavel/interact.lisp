@@ -2,17 +2,18 @@
   (menu (state_constructer (ramdom_board)))
 )
 (defun menu (state)
-  (game_round (first_play (first_play state (get_initial_move) -1) (get_initial_move) 1) -1)
+  (game_round (first_play (first_play state (get_initial_move)) (get_initial_move)))
 )
-(defun game_round (state player_turn)
+(defun game_round (state)
   (progn 
     (print_state state)
-    (let* ( (player (get_player state player_turn))
+    (let* ( (player (get_player state (get_play_turn state)))
             (move_vec (get_player_move (player-position player)))
           )
-      (game_round (move_piece state move_vec player_turn)  (* player_turn -1))
+      (game_round (move_piece state move_vec))
     )
   )
+  
 )
 (defun get_initial_move ()
   (let*  ((option (string-downcase (show_question "Qual e a sua opcao")))
@@ -38,9 +39,6 @@
 
 
 
-
-
-
 (defun show_question (question)
 "Mostra na terminal uma pergunta e retorna a resposta do utilizador"
   (format t "~%> ~a" question)
@@ -50,8 +48,14 @@
   "Le o input do utilizador."
   (format t "~%>> ")
   (finish-output)
-  (let ((opcao (string-downcase (princ-to-string (read))))) (clear-input) opcao)
+  (let ((opcao (read))) (clear-input) opcao)
 )
+;(defun read_option ()
+;  "Le o input do utilizador."
+;  (format t "~%>> ")
+;  (finish-output)
+;  (let ((opcao (string-downcase (princ-to-string (read))))) (clear-input) opcao)
+;)
 
 
 (defun print_state (state)
@@ -64,6 +68,9 @@
     (print_board new_board)
     (format t 
 "
+Cavalo ~a a jogar
+
+
 Player- 1 
   Caminho - Inicio ~a
   Pontos  - ~a pts
@@ -72,12 +79,19 @@ Player- 2
   Caminho - Inicio ~a
   Pontos  - ~a pts
 " 
+      (get_color (get_play_turn state))
       (path_to_string (player-path player1))
       (player-points player1)
       (path_to_string (player-path player2))
       (player-points player2)
     )
 )
+)
+(defun get_color (play_turn) 
+  (if (= play_turn -1)
+    (format nil "Branco")
+    (format nil "Preto")
+  )
 )
 (defun path_to_string (path)
   (format nil "~{~<-> ~a~>~^ ~}" (mapcar #'position_to_string path))
