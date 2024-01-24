@@ -7,7 +7,12 @@
   (make-result :value (get_value node) :stats stats :execution_time (- (get-internal-real-time) (statistics-init_time stats)))
 )
 (defun get_value (node)
-  (node-value (car (cdr (built_path node))))
+  (let ((val (car (cdr (built_path node)))))
+    (if (NULL val)
+      nil
+      (node-value  val)
+    )
+  )
 )
 (defun built_path (node)
   (cond ((null node)
@@ -33,13 +38,13 @@
   (if (null stats)
     (make-statistics
       :init_time (get-internal-real-time)
-      :analised_node analised_node
+      :analised_nodes analised_node
       :alfa_cuts alfa_cuts
       :beta_cuts beta_cuts
     )
     (make-statistics
       :init_time (statistics-init_time stats)
-      :analised_node (+ (statistics-analised_node stats) analised_node)
+      :analised_nodes (+ (statistics-analised_nodes stats) analised_node)
       :alfa_cuts (+ (statistics-alfa_cuts stats) alfa_cuts)
       :beta_cuts (+ (statistics-beta_cuts stats) beta_cuts)
     )
@@ -66,58 +71,19 @@
     )
   )
 )
+(defun node_compare (node1 node2)
+  (let ((eval1 (eval_node node1)) (eval2 (eval_node node2)))
+    (cond ((or (NULL eval1) (NULL eval2)) -1)
+          (- eval2 eval1)
+    )
+  )
+)
 (defun eval_node (node) 
 "Retorna o numero de pontos obtidos no estado"
   (if (null node) nil (node-heuristic node))
 )
 (defun min_node () (make-node :heuristic -1000000))
 (defun max_node () (make-node :heuristic 1000000))
-
-;(defun result_constructer (node stats)
-;(defun statistics_constructer (stats analised_node alfa_cuts beta_cuts)
-(defun minmax (state depth heuristic expand);max_time
-  (recursive_minmax (node_constructer nil state heuristic) t depth heuristic expand)
-)
-(defun recursive_minmax (node is_maxing depth heuristic expand);max_time
-    (let    ((child_nodes (expand_node node expand heuristic))
-            )
-    
-        (cond ((or (= depth 0) (NULL child_nodes)) node)
-              (is_maxing
-                (calculate_max_eval child_nodes (min_node) depth heuristic expand)
-              )
-              (t
-                (calculate_min_eval child_nodes (max_node) depth heuristic expand)
-              )
-        )
-    )
-)
-(defun calculate_max_eval (nodes max_eval depth heuristic expand); max_time 
-    (let ((node (car nodes)))      
-      (cond ((NULL node) max_eval)
-          (t 
-            (let*  ( (eval (recursive_minmax node nil (- depth 1) heuristic expand))
-                    (new_max_eval (get_max eval max_eval))
-                  )
-              (calculate_max_eval (cdr nodes) new_max_eval depth heuristic expand)
-            ) 
-          )           
-      )
-    )
-)
-(defun calculate_min_eval (nodes min_eval depth heuristic expand); max_time 
-  (let ((node (car nodes)))      
-    (cond ((NULL node) min_eval)
-        (t 
-          (let*  ( (eval (recursive_minmax node t (- depth 1) heuristic expand))
-                  (new_min_eval (get_min eval min_eval))
-                )
-            (calculate_min_eval (cdr nodes) new_min_eval depth heuristic expand)
-          ) 
-        )           
-    )
-  )
-)
 
 (defun get_max (node1 node2)
     (if (> (eval_node node1) (eval_node node2))
@@ -135,87 +101,174 @@
   (mapcar #'(lambda (val) (node_constructer node val heuristic)) (apply expand (list (node-value node))))
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(defun alfabeta (state play_turn depth max_time heuristic)
-
-
+(defun termination_condition (node depth stats max_time) 
+  (if (or (NULL node) (= depth 0) (>= (- (get-internal-real-time) (statistics-init_time stats)) max_time))
+    t
+    nil
+  )
 )
-(defun recursive_alfabeta (node alfa beta is_maxing depth heuristic expand);max_time
-    (let    ((child_nodes (expand_node node expand heuristic))
-            )
-    
-        (cond ((or (= depth 0) (NULL child_nodes)) node)
+
+
+
+
+
+(defun alfabeta (state depth heuristic expand max_time)
+  (multiple-value-bind 
+    (node stats) 
+    (recursive_alfabeta 
+      (node_constructer nil state heuristic)  
+      (min_node) 
+      (max_node) 
+      t 
+      depth 
+      heuristic 
+      expand 
+      (statistics_constructer nil 0 0 0)
+      max_time
+    ) 
+    (result_constructer node stats)
+  )
+)
+(defun recursive_alfabeta (node alfa beta is_maxing depth heuristic expand stats max_time)
+    (let    ((child_nodes (expand_node node expand heuristic)))
+        (cond ((termination_condition child_nodes depth stats max_time) 
+                (values node stats)
+              )
               (is_maxing
-                (calculate_max_eval child_nodes alfa beta -1000000 depth heuristic expand)
+                (calculate_max_eval_alfabeta child_nodes alfa beta (min_node) depth heuristic expand stats max_time)
               )
               (t
-                (calculate_min_eval child_nodes alfa beta 1000000 depth heuristic expand)
+                (calculate_min_eval_alfabeta child_nodes alfa beta (max_node) depth heuristic expand stats max_time)
               )
         )
     )
 )
-
-(defun calculate_max_eval (nodes alfa beta max_eval depth heuristic expand); max_time 
-    (let*   ( (node (car nodes))
-              (eval (recursive_alfabeta node alfa beta nil (- depth 1) heuristic expand))
-              (new_max_eval (get_max eval max_eval))
-              ;(new_alfa (get_max eval alfa))
+(defun calculate_max_eval_alfabeta (nodes alfa beta max_eval depth heuristic expand stats max_time)
+  (let ((node (car nodes)))      
+    (cond ((termination_condition node depth stats max_time) (values max_eval stats))
+      (t 
+          (multiple-value-bind 
+            (eval new_stats)
+            (recursive_alfabeta node alfa beta nil (- depth 1) heuristic expand stats max_time)
+            (let  ( (new_max_eval (get_max eval max_eval))
+                    (new_alfa (get_max eval alfa))
+                  )
+              (if (<= (node_compare new_alfa beta) 0)
+                (values new_max_eval (statistics_constructer new_stats 1 1 0))
+                (calculate_max_eval_alfabeta (cdr nodes) new_alfa beta new_max_eval depth heuristic expand (statistics_constructer new_stats 1 0 0) max_time) 
+              )
             )
-            (cond ((NULL node) max_eval)
-                  ;((<= beta new_alfa) (calculate_max_eval (cdr nodes) new_alfa beta new_max_eval depth heuristic expand))
-                  (t 
-                    (calculate_max_eval (cdr nodes) alfa beta new_max_eval depth heuristic expand)
-                  )            
-            )
-    )
-)
-(defun get_max (node1 node2)
-    (if (> (node-heuristic node1) (node-heuristic node1))
-        node1
-        node2
-    )
-)
-
-(defun calculate_min_eval (nodes alfa beta min_eval depth heuristic expand); max_time 
-  (let*   ( (node (car nodes))
-            (eval (recursive_alfabeta node alfa beta t (- depth 1) heuristic expand))
-            (new_min_eval (get_min eval min_eval))
-            ;(new_beta (get_min eval beta))
           )
-          (cond ((NULL node) min_eval)
-                ;((<= new_beta alfa) ;(calculate_min_eval (cdr nodes) new_alfa beta new_max_eval depth heuristic expand))
-                (t 
-                  (calculate_min_eval (cdr nodes) alfa beta new_min_eval depth heuristic expand)
-                )            
-          )
+      )
+    )           
   )
 )
-(defun get_min (node1 node2)
-    (if (< (node-heuristic node1) (node-heuristic node1))
-        node1
-        node2
-    )
+(defun calculate_min_eval_alfabeta (nodes alfa beta min_eval depth heuristic expand stats max_time)
+  (let ((node (car nodes)))      
+    (cond ((termination_condition node depth stats max_time) (values min_eval stats))
+      (t 
+          (multiple-value-bind 
+            (eval new_stats)
+            (recursive_alfabeta node alfa beta t (- depth 1) heuristic expand stats max_time)
+            (let  ( (new_min_eval (get_min eval min_eval))
+                    (new_beta (get_min eval beta))
+                  )
+              (if (<= (node_compare alfa new_beta) 0)
+                (values new_min_eval (statistics_constructer new_stats 1 0 1))
+                (calculate_min_eval_alfabeta (cdr nodes) alfa new_beta new_min_eval depth heuristic expand (statistics_constructer new_stats 1 0 0) max_time) 
+              )
+            )
+          )
+      )
+    )  
+  )
 )
 
-(defun expand_node (node expand heuristic)
-    (mapcar #'(lambda (val) (node_constructer node val heuristic)) (apply  #'expand (list (node-value node))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(defun minmax (state depth heuristic expand);max_time
+  (multiple-value-bind 
+    (node stats) 
+    (recursive_minmax (node_constructer nil state heuristic) t depth heuristic expand (statistics_constructer nil 0 0 0)) 
+    (result_constructer node stats)
+  )
 )
+(defun recursive_minmax (node is_maxing depth heuristic expand stats);max_time
+    (let    ((child_nodes (expand_node node expand heuristic)))
+        (cond ((or (= depth 0) (NULL child_nodes)) 
+                (values node stats)
+              )
+              (is_maxing
+                (calculate_max_eval child_nodes (min_node) depth heuristic expand stats)
+              )
+              (t
+                (calculate_min_eval child_nodes (max_node) depth heuristic expand stats)
+              )
+        )
+    )
+)
+(defun calculate_max_eval (nodes max_eval depth heuristic expand stats); max_time 
+  (let ((node (car nodes)))      
+    (cond ((NULL node) (values max_eval stats))
+      (t 
+          (multiple-value-bind 
+            (eval new_stats)
+            (recursive_minmax node nil (- depth 1) heuristic expand stats)
+            (let ((new_max_eval (get_max eval max_eval)))
+              (calculate_max_eval (cdr nodes) new_max_eval depth heuristic expand (statistics_constructer new_stats 1 0 0)) 
+            )
+          )
+      )
+    )           
+  )
+)
+(defun calculate_min_eval (nodes min_eval depth heuristic expand stats); max_time 
+  (let ((node (car nodes)))      
+    (cond ((NULL node) (values min_eval stats))
+      (t 
+          (multiple-value-bind 
+            (eval new_stats)
+            (recursive_minmax node t (- depth 1) heuristic expand stats)
+            (let ((new_min_eval (get_min eval min_eval)))
+              (calculate_min_eval (cdr nodes) new_min_eval depth heuristic expand (statistics_constructer new_stats 1 0 0)) 
+            )
+          )
+      )
+    )  
+  )
+)
+
+
+
