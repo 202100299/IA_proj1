@@ -1,7 +1,10 @@
 (load "jogo.lisp")
 (load "algoritmo.lisp")
 
-(defun play () (main_menu))
+(defun play ()
+"Função que lança o programa"
+ (main_menu)
+)
 
 (defun jogar (estado tempo)
   (let* ( (state (result-value (computer_move (verify_state estado) tempo)))
@@ -39,8 +42,12 @@
 
 
 
-(defun print_state (state) (format t "~a" (format_state_to_string state)))
+(defun print_state (state) 
+"Mostra o estado na terminal"
+  (format t "~a" (format_state_to_string state))
+)
 (defun format_state_to_string (state)
+"Converte o estado em uma string"
 (if (NULL state) (format nil "Nenhuma jogada executada!")
 (let* ( (board (get_state_board_points state))
         (player1 (get_player state -1))
@@ -123,6 +130,7 @@ Player- 2
 
 
 (defun position_to_string (pos)
+"Transforma a posição em string"
   (let ((x (horse_position-x pos)) (y (horse_position-y pos)))
     (cond ((or (< x 0) (< y 0)) (format nil "NN"))
           (T (format nil "~a~a" (nth x '(A B C D E F G H I J)) y))
@@ -131,6 +139,7 @@ Player- 2
   
 )
 (defun string_to_position (str)
+"Converte uma string em posição"
   (cond ((not (= (length str) 2)) nil) 
         (t (let ( (x (- (char-code (char str 0)) 97)) 
                   (y (digit-char-p (char str 1)))
@@ -150,14 +159,16 @@ Player- 2
 
 
 
-(defun get_path () 
-  (format nil "C:\\Users\\ruies\\Documents\\programacao\\3ano\\IA\\proj2\\entregavel\\log.dat")
-)
 ;(defun get_path () 
-;  (show_question "Qual o caminho do ficheiro log.dat?")
+;  (format nil "C:\\Users\\ruies\\Documents\\programacao\\3ano\\IA\\proj2\\entregavel\\log.dat")
 ;)
+(defun get_path () 
+"Pede ao utilizador o caminho para o ficheiro log.dat"
+  (show_question "Qual o caminho do ficheiro log.dat?")
+)
 
 (defun main_menu ()
+"Menu principal"
   (let ((choice (show_question (format nil"Bem-vindo ao Jogo de Xadrez!~%1. Computador contra o Computador~%2. Jogador contra o Computador~%3. Sair~%"))))
     (case choice
       (1 (computer_vs_computer_menu))
@@ -168,6 +179,7 @@ Player- 2
 
 
 (defun computer_vs_computer_menu ()
+"Menu PC vs PC"
   (let ((max_time (show_question (format nil "Voce escolheu Computador contra Computador.~%Por favor, insira o tempo maximo para cada jogada(milisegundos): "))))
       (progn 
         (format t "Tempo maximo escolhido: ~a milisegundos.~%" max_time)
@@ -178,6 +190,7 @@ Player- 2
 
 
 (defun player_vs_computer_menu ()
+"Menu Player vs PC"
   (let  ( (max_time (show_question (format nil "Voce escolheu jogar contra o Computador.~%Por favor, insira o tempo maximo para cada jogada do computador(milisegundos): ")))
           (player_color (show_question (format nil "Voce sera o Cavalo (P) preto ou branco (B)?")))
         )
@@ -207,6 +220,7 @@ Player- 2
 
 
 (defun format_statistics_to_string (result)
+"Converte o resultado em string"
   (format nil "
 ~a
 Estatisticas
@@ -227,6 +241,7 @@ Cortes Beta: ~a
 
 
 (defun print_result (result path)
+"Mostra na terminal e acrescenta num ficheiro o resultado  "
   (let ((str (format_statistics_to_string result)))
     (progn
       (format t str)
@@ -255,6 +270,7 @@ Cortes Beta: ~a
 
 
 (defun player_move (state)  
+"Pede ao utilizador a proxima jogada"
   (if (NULL (is_first_move state))
     (move_piece state (get_player_move state))
     (progn (print_state state) (first_play state (get_initial_move)))
@@ -263,6 +279,7 @@ Cortes Beta: ~a
   
 
 (defun get_initial_move ()
+"Pede ao utilizador qual a primeira jogada "
   (let*  ((option (string-downcase (show_question "Qual e a sua opcao")))
           (init_x (- (char-code (char option 0)) 97)) 
         )
@@ -273,6 +290,7 @@ Cortes Beta: ~a
   )
 )
 (defun get_player_move (state)
+"Pede ao utilizador a proxima jogada"
   (let*  ((player (get_player state (get_play_turn state)))
           (current_position (player-position player))
           (option (string-downcase (show_question "Qual e a sua opcao")))
@@ -296,6 +314,7 @@ Cortes Beta: ~a
 )
 
 (defun game_round (state max_time player_turn path) 
+"Ronda de jogo"
   (cond ((NULL state) nil)
         ((and (NULL (get_all_possible_plays state)) (NULL (get_all_possible_plays (switch_play_turn state)))) 
           (format t "O jogo terminou!")

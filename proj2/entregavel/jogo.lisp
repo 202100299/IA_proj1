@@ -96,6 +96,7 @@
   )
 )
 (defun switch_play_turn (state)
+"Troca a vez do jogador"
   (state_constructer_with_params 
     (get_state_board_points state)
     (get_player state -1)
@@ -309,14 +310,14 @@ troca o de algarimos inversos por nil, e retorna a sua posição"
 ;minmax (state depth heuristic expand)
 ;computer functions
 (defun computer_move_minmax (state max_time)
-"(alfabeta state play_turn depth max_time heuristic)"
+"Calcula a proxima jogada com minmax"
   (if (= (get_play_turn state) -1)
     (minmax state 5 #'h1_player1 #'get_all_possible_plays)
     (minmax state 5 #'h1_player2 #'get_all_possible_plays)
   )
 )
 (defun computer_move (state max_time)
-"(alfabeta state play_turn depth max_time heuristic)"
+"Calcula a proxima jogada com alfabeta"
   (if (= (get_play_turn state) -1)
     (alfabeta state 5 #'h1_player1 #'get_all_possible_plays max_time)
     (alfabeta state 5 #'h1_player2 #'get_all_possible_plays max_time)
@@ -369,6 +370,7 @@ troca o de algarimos inversos por nil, e retorna a sua posição"
   )
 )
 (defun is_first_move (state)
+"Verifica se é primeira jogado do jogador"
   (let ((player (get_player state (get_play_turn state))))
     (if (< (horse_position-x (player-position player)) 0)
       t

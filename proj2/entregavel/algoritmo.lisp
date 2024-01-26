@@ -15,6 +15,7 @@
   )
 )
 (defun built_path (node)
+"Constroi o caminho desde do no folha ate ao no raiz"
   (cond ((null node)
           nil
         )
@@ -72,6 +73,7 @@
   )
 )
 (defun node_compare (node1 node2)
+"Compara a heuristica do node1 com o node2 se node1 for maior o resultado é negativo se for o node2 maior é positivo se forem iguais é 0"
   (let ((eval1 (eval_node node1)) (eval2 (eval_node node2)))
     (cond ((or (NULL eval1) (NULL eval2)) -1)
           (t (- eval2 eval1))
@@ -79,31 +81,35 @@
   )
 )
 (defun eval_node (node) 
-"Retorna o numero de pontos obtidos no estado"
+"Retorna a heuristica"
   (if (null node) nil (node-heuristic node))
 )
 (defun min_node () (make-node :heuristic -1000000))
 (defun max_node () (make-node :heuristic 1000000))
 
 (defun get_max (node1 node2)
+"Retorna o node com maior heuristica"
     (if (> (eval_node node1) (eval_node node2))
         node1
         node2
     )
 )
 (defun get_min (node1 node2)
+"Retorna o node com menor heuristica"
     (if (< (eval_node node1) (eval_node node2))
         node1
         node2
     )
 )
 (defun expand_node (node expand heuristic)
+"Aplica a função expand para calcular os nos filhos e a função heuristic para calcular o seu valor heuristico e retorna uma lista de nodes"
   (if (NULL node)
     nil
     (mapcar #'(lambda (val) (node_constructer node val heuristic)) (apply expand (list (node-value node))))
   )
 )
 (defun termination_condition (node depth stats max_time) 
+"Verifica se o node é terminal"
   (let ((exec_time (- (get-internal-real-time) (statistics-init_time stats))))
     (if (or (NULL node) (= depth 0) (>= exec_time max_time))
       nil
@@ -118,6 +124,7 @@
 
 
 (defun alfabeta (state depth heuristic expand max_time)
+"Algoritmo alfabeta que usa a função expand para calcular os estados filhos e a função heuristica para calcular o sue valor heuristico"
   (multiple-value-bind 
     (node stats) 
     (recursive_alfabeta 
