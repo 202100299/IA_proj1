@@ -1,4 +1,4 @@
-;(defun example_state () (state_constructer (ramdom_board)))
+(defun example_state () (state_constructer (ramdom_board)))
 ;(defun example_state_with_players () (first_play (first_play (example_state) 0) 0))
 
 
@@ -95,7 +95,14 @@
     )
   )
 )
-
+(defun switch_play_turn (state)
+  (state_constructer_with_params 
+    (get_state_board_points state)
+    (get_player state -1)
+    (get_player state 1)
+    (* (get_play_turn state) -1)
+  )
+)
 
 ;;Player definition
 (defstruct player
@@ -311,29 +318,12 @@ troca o de algarimos inversos por nil, e retorna a sua posição"
 (defun computer_move (state max_time)
 "(alfabeta state play_turn depth max_time heuristic)"
   (if (= (get_play_turn state) -1)
-    (alfabeta state 6 #'h1_player1 #'get_all_possible_plays max_time)
-    (alfabeta state 6 #'h1_player2 #'get_all_possible_plays max_time)
+    (alfabeta state 5 #'h1_player1 #'get_all_possible_plays max_time)
+    (alfabeta state 5 #'h1_player2 #'get_all_possible_plays max_time)
   )
 )
-(defun simulate (state) 
-  (let ( (result (computer_move state 1)))
-    (cond ((NULL state) (print "Aqui1"))
-          ((NULL (result-value result)) (print "Aqui2")
-            (simulate (state_constructer_with_params 
-              (get_state_board_points state)
-              (get_player state -1)
-              (get_player state 1)
-              (* (get_play_turn state) -1)
-            ))
-          )
-          (t 
-            (progn (print result)
-            (print_state (result-value result))
-            (sleep 1)
-            (simulate (result-value result)) )
-          ))
-  )
-)
+
+
 ;heuristics
 (defun h1 (state play_turn)
 "Pontos do jogador - pontos do jogador inimigo"
@@ -373,14 +363,19 @@ troca o de algarimos inversos por nil, e retorna a sua posição"
 )
 (defun get_all_possible_plays (state)
 "Se for as jogadas inicias utiliza get_possible_initial_plays se não utiliza get_possible_plays"
+  (if (is_first_move state)
+    (get_possible_initial_plays state)
+    (get_possible_plays state)
+  )
+)
+(defun is_first_move (state)
   (let ((player (get_player state (get_play_turn state))))
     (if (< (horse_position-x (player-position player)) 0)
-      (get_possible_initial_plays state)
-      (get_possible_plays state)
+      t
+      nil
     )
   )
 )
-
 ;auxiliary functions
 (defun horse_possible_vectors () 
 "Retorna uma lista com todos os vetores que o cavalo pode fazer."
